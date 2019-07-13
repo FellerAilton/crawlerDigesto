@@ -1,4 +1,5 @@
 from lxml.html import fromstring, tostring
+import csv
 import json
 import requests
 import sys
@@ -84,11 +85,27 @@ def json_save(data,title):
         json.dump(json_data,json_file)
 
 """***********************************************************************************
-*       Descrição       :       Crawler da pagina-alvo 1
-*       Parametros      :       Habilita escrita no console, Habilita arquivo JSON
+*       Descrição       :       Escreve os dados em um arquivo CSV
+*       Parametros      :       Dados a serem escritos no arquivo CSV
 *       Retorno         :       Nenhum
 **********************************************************************************"""
-def crawler_page1(console_print_var = False, json_save_var = False):
+def csv_save(data,title):
+    length = len(data)
+
+    with open(title,'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file,delimiter=';')
+
+        for i in range(length):
+            csv_writer.writerow(data[i])
+
+
+"""***********************************************************************************
+*       Descrição       :       Crawler da pagina-alvo 1
+*       Parametros      :       Habilita escrita no console, Habilita arquivo JSON
+*                               Habilita arquivo CSV
+*       Retorno         :       Nenhum
+**********************************************************************************"""
+def crawler_page1(console_print_var = False, json_save_var = False, csv_save_var = False):
     url = 'https://www.vultr.com/products/cloud-compute/'
     info = []
     html = download(url)
@@ -135,6 +152,8 @@ def crawler_page1(console_print_var = False, json_save_var = False):
         console_print(info)
     if json_save_var is True:
         json_save(info,'page1.json')
+    if csv_save_var is True:
+        csv_save(info,'page1.csv')
 
 """***********************************************************************************
 *       Descrição       :       Decodifica argumentos para chamar função correta
@@ -144,6 +163,7 @@ def crawler_page1(console_print_var = False, json_save_var = False):
 def main(argv,num_argv):
     enable_print = False
     enable_json  = False
+    enable_csv   = False
 
     if(num_argv <= 1):
         print("crawler.py --help | --print | --save_json")
@@ -152,13 +172,15 @@ def main(argv,num_argv):
             enable_print = True
         if '--save_json' in argv:
             enable_json = True
-            
+        if '--save_csv' in argv:
+            enable_csv = True
+
         if '--help' in argv:
             print("--print\t\t Escreve na tela o resultado obtido pelo crawler\n"+
-                  "--save_json\t Salva o resultado obtido pelo crawler em um arquivo json\n"
-                  )
+                  "--save_json\t Salva o resultado obtido pelo crawler em um arquivo json\n"+
+                  "--save_csv\t Salva o resultado obtido pelo crawler em arquivos csv")
         else:
-            crawler_page1(enable_print,enable_json)
+            crawler_page1(enable_print,enable_json,enable_csv)
 
 
 """***********************************************************************************
