@@ -1,4 +1,5 @@
 from lxml.html import fromstring, tostring
+import json
 import requests
 import sys
 
@@ -64,11 +65,30 @@ def console_print(data):
         print(print_string+"\n")
 
 """***********************************************************************************
-*       Descrição       :       Crawler da pagina-alvo 1
-*       Parametros      :       Habilita escrita no console
+*       Descrição       :       Escreve os dados em um arquivo JSON
+*       Parametros      :       Dados a serem escritos no arquivo JSON
 *       Retorno         :       Nenhum
 **********************************************************************************"""
-def crawler_page1(console_print_var = False):
+def json_save(data,title):
+    length = len(data) - 1
+    n_index = len(data[0])
+
+    json_data = {}
+    for i in range(length):
+        dummy_dict = {}
+        for j in range(n_index):
+            dummy_dict[data[0][j]] = data[i+1][j]
+        json_data['machine ' + str(i+1)] = dummy_dict
+
+    with open(title,'w') as json_file:
+        json.dump(json_data,json_file)
+
+"""***********************************************************************************
+*       Descrição       :       Crawler da pagina-alvo 1
+*       Parametros      :       Habilita escrita no console, Habilita arquivo JSON
+*       Retorno         :       Nenhum
+**********************************************************************************"""
+def crawler_page1(console_print_var = False, json_save_var = False):
     url = 'https://www.vultr.com/products/cloud-compute/'
     info = []
     html = download(url)
@@ -113,6 +133,8 @@ def crawler_page1(console_print_var = False):
 
     if console_print_var is True:
         console_print(info)
+    if json_save_var is True:
+        json_save(info,'page1.json')
 
 """***********************************************************************************
 *       Descrição       :       Decodifica argumentos para chamar função correta
@@ -121,14 +143,22 @@ def crawler_page1(console_print_var = False):
 **********************************************************************************"""
 def main(argv,num_argv):
     enable_print = False
+    enable_json  = False
 
     if(num_argv <= 1):
-        print("crawler.py --print")
+        print("crawler.py --help | --print | --save_json")
     else:
         if '--print' in argv:
             enable_print = True
-
-        crawler_page1(enable_print)
+        if '--save_json' in argv:
+            enable_json = True
+            
+        if '--help' in argv:
+            print("--print\t\t Escreve na tela o resultado obtido pelo crawler\n"+
+                  "--save_json\t Salva o resultado obtido pelo crawler em um arquivo json\n"
+                  )
+        else:
+            crawler_page1(enable_print,enable_json)
 
 
 """***********************************************************************************
