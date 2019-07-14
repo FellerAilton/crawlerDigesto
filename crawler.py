@@ -5,28 +5,6 @@ import requests
 import sys
 
 """***********************************************************************************
-*       Descrição       :       Mostra o progresso do download na tela
-*       Parametros      :       Objeto da lib Requests, Nome do arquivo que recebera
-*                               os dados para calcular o progresso
-*       Retorno         :       Nenhum
-**********************************************************************************"""
-def download_progress(resp,file_name):
-    with open(file_name, "wb") as f:
-        total_length = resp.headers.get('content-length')
-
-        if total_length is None:  # no content length header
-            f.write(resp.content)
-        else:
-            dl = 0
-            total_length = int(total_length)
-            for data in resp.iter_content(chunk_size=4096):
-                dl += len(data)
-                f.write(data)
-                done = int(50 * dl / total_length)
-                sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50 - done)))
-                sys.stdout.flush()
-
-"""***********************************************************************************
 *       Descrição       :       Download do código HTML de uma página
 *       Parametros      :       URL a ser baixada, Numero de tentativas caso ocorra 
 *                               algum erro (default:2)
@@ -37,7 +15,6 @@ def download(url, num_retries=2, user_agent='wswp', proxies=None):
     headers = {'User-Agent': user_agent}
     try:
         resp = requests.get(url, headers=headers, proxies=proxies, stream=True)
-        #download_progress(resp,"download.data")
         html = resp.text
         if resp.status_code >= 400:
             print('Download error:', resp.text)
@@ -63,7 +40,8 @@ def console_print(data):
         print_string = ''
         for j in range(n_index):
             print_string += data[i][j]+"\t\t"
-        print(print_string+"\n")
+        print(print_string.expandtabs(15))
+    print("-"*130)
 
 """***********************************************************************************
 *       Descrição       :       Escreve os dados em um arquivo JSON
@@ -101,11 +79,12 @@ def csv_save(data,title):
 
 """***********************************************************************************
 *       Descrição       :       Crawler da pagina-alvo 1
-*       Parametros      :       Habilita escrita no console, Habilita arquivo JSON
+*       Parametros      :       Habilita escrita no console, Habilita arquivo JSON,
 *                               Habilita arquivo CSV
 *       Retorno         :       Nenhum
 **********************************************************************************"""
 def crawler_page1(console_print_var = False, json_save_var = False, csv_save_var = False):
+    print("-" * 130)
     url = 'https://www.vultr.com/products/cloud-compute/'
     info = []
     html = download(url)
@@ -146,7 +125,7 @@ def crawler_page1(console_print_var = False, json_save_var = False, csv_save_var
                     j += 1
             i += 1
 
-        info.append(dummy)
+            info.append(dummy)
 
     if console_print_var is True:
         console_print(info)
@@ -154,6 +133,77 @@ def crawler_page1(console_print_var = False, json_save_var = False, csv_save_var
         json_save(info,'page1.json')
     if csv_save_var is True:
         csv_save(info,'page1.csv')
+
+"""***********************************************************************************
+*       Descrição       :       Crawler da pagina-alvo 2
+*       Parametros      :       Habilita escrita no console, Habilita arquivo JSON,
+*                               Habilita arquivo CSV
+*       Retorno         :       Nenhum
+**********************************************************************************"""
+def crawler_page2(console_print_var = False, json_save_var = False, csv_save_var = False):
+    url = 'https://www.digitalocean.com/pricing/'
+    info = []
+    html = download(url)
+    tree = fromstring(html)
+
+    # pega o cabeçalho da tabela
+    i = 1
+    dummy = []
+    while i > 0:
+        area = tree.xpath('//*[@id="standard-droplets-pricing-table"]/div/div/table/thead/tr/th['+str(i)+']/text()')
+        if not area:
+            i = 0
+        else:
+            text_dummy = area[0]
+            text_final = text_dummy.strip(' \n\t')
+            dummy.append(text_final)
+            i += 1
+    info.append(dummy)
+
+    # pega as informaçoes de cada linha da tabela
+    i = 1
+    length = len(info[0])
+    while i > 0:
+        area = tree.xpath('//*[@id="standard-droplets-pricing-table"]/div/div/table/tbody/tr['+str(i)+']')
+        if not area:
+            i = 0
+        else:
+            dummy = []
+            j = 1
+            while j > 0:
+                area = tree.xpath('//*[@id="standard-droplets-pricing-table"]/div/div/table/tbody/tr['+str(i)+']'+
+                                  '/td['+str(j)+']/strong/text()')
+                if not area:
+                    area = tree.xpath('//*[@id="standard-droplets-pricing-table"]/div/div/table/tbody/tr['+str(i)+']'+
+                                      '/td['+str(j)+']/text()')
+                    if not area:
+                        j = 0
+                    else:
+                        if j <= length:
+                            text_dummy = area[0]
+                            text_final = text_dummy.strip(' \n\t')
+                            dummy.append(text_final)
+                            j += 1
+                        else:
+                            j = 0
+                else:
+                    if j <= length:
+                        text_dummy = area[0]
+                        text_final = text_dummy.strip(' \n\t')
+                        dummy.append(text_final)
+                        j += 1
+                    else:
+                        j = 0
+            i += 1
+
+            info.append(dummy)
+
+    if console_print_var is True:
+        console_print(info)
+    if json_save_var is True:
+        json_save(info, 'page2.json')
+    if csv_save_var is True:
+        csv_save(info, 'page2.csv')
 
 """***********************************************************************************
 *       Descrição       :       Decodifica argumentos para chamar função correta
@@ -181,6 +231,7 @@ def main(argv,num_argv):
                   "--save_csv\t Salva o resultado obtido pelo crawler em arquivos csv")
         else:
             crawler_page1(enable_print,enable_json,enable_csv)
+            crawler_page2(enable_print, enable_json, enable_csv)
 
 
 """***********************************************************************************
